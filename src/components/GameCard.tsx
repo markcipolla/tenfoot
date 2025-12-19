@@ -68,9 +68,9 @@ export const GameCard = forwardRef<HTMLButtonElement, GameCardProps>(
           ref={ref}
           className={`flex flex-col bg-surface border-none rounded p-0 cursor-pointer overflow-hidden transition-all duration-fast shadow-md relative w-full
             ${featured ? 'aspect-[1.55]' : 'aspect-[3/4]'}
-            ${notInstalled ? 'opacity-50 grayscale-[0.7] hover:opacity-75 hover:grayscale-[0.4] focus-visible:opacity-75 focus-visible:grayscale-[0.4]' : ''}
+            ${notInstalled ? 'opacity-50 grayscale-[0.7] hover:opacity-75 hover:grayscale-[0.4] focus:opacity-75 focus:grayscale-[0.4]' : ''}
             hover:scale-[1.02] hover:shadow-lg
-            focus-visible:scale-[1.08] focus-visible:z-[5] focus-visible:shadow-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary
+            focus:scale-[1.08] focus:z-[5] focus:shadow-lg focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-primary
             focus:outline-none
             ${isActive ? 'scale-[1.12] z-10 shadow-lg' : ''}`}
           onClick={onClick}
