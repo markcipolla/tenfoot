@@ -23,11 +23,14 @@ async function toggleFullscreen() {
 
 type AppScreen = Screen | 'steam-connect';
 
+type StoreFilter = 'steam' | 'epic' | 'gog' | null;
+
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('stores');
+  const [storeFilter, setStoreFilter] = useState<StoreFilter>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const { connectStore, isConnected } = useStoreConnections();
+  const { connectStore } = useStoreConnections();
 
   // Load library first if synced data exists
   useEffect(() => {
@@ -62,24 +65,24 @@ function App() {
   };
 
   const handleNavigate = (screen: Screen) => {
+    setStoreFilter(null); // Clear filter when navigating via menu
     setCurrentScreen(screen);
   };
 
   const handleStoreSelect = (storeId: string) => {
     if (storeId === 'steam') {
-      if (isConnected('steam')) {
-        setCurrentScreen('library');
-      } else {
-        setCurrentScreen('steam-connect');
-      }
-    } else {
+      // Always show Steam page - it handles both connected and not connected states
+      setCurrentScreen('steam-connect');
+    } else if (storeId === 'epic' || storeId === 'gog') {
       // TODO: Implement Epic and GOG connection screens
-      console.log('Selected store:', storeId);
+      setStoreFilter(storeId as StoreFilter);
+      setCurrentScreen('library');
     }
   };
 
   const handleSteamConnect = () => {
     connectStore('steam');
+    setStoreFilter('steam');
     setCurrentScreen('library');
   };
 
@@ -147,6 +150,7 @@ function App() {
         return (
           <LibraryScreen
             onNavigateDown={handleNavigateToBottomBar}
+            storeFilter={storeFilter}
           />
         );
       case 'settings':

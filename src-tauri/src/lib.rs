@@ -11,6 +11,9 @@ use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::State;
 
+/// Type alias for play history data: (last_played, installed_at)
+type PlayHistoryMap = HashMap<String, (Option<u64>, Option<u64>)>;
+
 /// Application state containing the game library
 pub struct AppState {
     pub library: Mutex<GameLibrary>,
@@ -65,7 +68,9 @@ fn launch_game(state: State<AppState>, game_key: String) -> Result<(), String> {
     let storage = state.storage.lock().map_err(|e| e.to_string())?;
 
     // Record the launch time before launching
-    storage.record_game_launch(&game_key).map_err(|e| e.to_string())?;
+    storage
+        .record_game_launch(&game_key)
+        .map_err(|e| e.to_string())?;
 
     library.launch_game(&game_key).map_err(|e| e.to_string())
 }
@@ -157,6 +162,10 @@ fn sync_steam_library(state: State<AppState>) -> Result<Vec<Game>, String> {
                 game.install_path = installed.install_path.clone();
                 game.executable = installed.executable.clone();
                 game.size_bytes = installed.size_bytes;
+                // Use name from installed game if API didn't provide one
+                if game.name.starts_with("App ") {
+                    game.name = installed.name.clone();
+                }
             }
             game
         })
@@ -175,7 +184,9 @@ fn sync_steam_library(state: State<AppState>) -> Result<Vec<Game>, String> {
 
     {
         let storage = state.storage.lock().map_err(|e| e.to_string())?;
-        storage.save_games_cache(&cache).map_err(|e| e.to_string())?;
+        storage
+            .save_games_cache(&cache)
+            .map_err(|e| e.to_string())?;
     }
 
     Ok(merged_games)
@@ -219,6 +230,10 @@ fn get_steam_games_cached(state: State<AppState>) -> Result<Vec<Game>, String> {
                 game.installed = true;
                 game.install_path = installed.install_path.clone();
                 game.size_bytes = installed.size_bytes;
+                // Use name from installed game if API didn't provide one
+                if game.name.starts_with("App ") {
+                    game.name = installed.name.clone();
+                }
             } else {
                 game.installed = false;
             }
@@ -267,7 +282,7 @@ fn is_steam_installed() -> Result<bool, String> {
 
 /// Get play history for enriching game data on frontend
 #[tauri::command]
-fn get_play_history(state: State<AppState>) -> Result<HashMap<String, (Option<u64>, Option<u64>)>, String> {
+fn get_play_history(state: State<AppState>) -> Result<PlayHistoryMap, String> {
     let storage = state.storage.lock().map_err(|e| e.to_string())?;
     let history = storage.load_play_history().map_err(|e| e.to_string())?;
 
@@ -303,9 +318,14 @@ fn save_app_settings(state: State<AppState>, settings: AppSettings) -> Result<()
 
 /// Get detailed game information from Steam Store API
 #[tauri::command]
-fn get_game_details(state: State<AppState>, game_id: String) -> Result<Option<GameDetails>, String> {
+fn get_game_details(
+    state: State<AppState>,
+    game_id: String,
+) -> Result<Option<GameDetails>, String> {
     let steam_api = state.steam_api.lock().map_err(|e| e.to_string())?;
-    steam_api.get_game_details(&game_id).map_err(|e| e.to_string())
+    steam_api
+        .get_game_details(&game_id)
+        .map_err(|e| e.to_string())
 }
 
 /// Set auto-launch on startup
@@ -315,33 +335,29 @@ fn set_autolaunch(enabled: bool) -> Result<(), String> {
     {
         use std::process::Command;
 
-        let app_path = std::env::current_exe()
-            .map_err(|e| format!("Failed to get app path: {}", e))?;
+        let app_path =
+            std::env::current_exe().map_err(|e| format!("Failed to get app path: {e}"))?;
 
         if enabled {
             // Add to login items using osascript
+            let app_display = app_path.display();
             let script = format!(
-                r#"tell application "System Events" to make login item at end with properties {{path:"{}", hidden:false}}"#,
-                app_path.display()
+                r#"tell application "System Events" to make login item at end with properties {{path:"{app_display}", hidden:false}}"#
             );
             Command::new("osascript")
                 .args(["-e", &script])
                 .output()
-                .map_err(|e| format!("Failed to add login item: {}", e))?;
+                .map_err(|e| format!("Failed to add login item: {e}"))?;
         } else {
             // Remove from login items
             let app_name = app_path
                 .file_stem()
                 .and_then(|s| s.to_str())
                 .unwrap_or("TenFoot");
-            let script = format!(
-                r#"tell application "System Events" to delete login item "{}""#,
-                app_name
-            );
+            let script =
+                format!(r#"tell application "System Events" to delete login item "{app_name}""#);
             // Ignore errors when removing (might not exist)
-            let _ = Command::new("osascript")
-                .args(["-e", &script])
-                .output();
+            let _ = Command::new("osascript").args(["-e", &script]).output();
         }
         Ok(())
     }
@@ -350,17 +366,27 @@ fn set_autolaunch(enabled: bool) -> Result<(), String> {
     {
         use std::process::Command;
 
-        let app_path = std::env::current_exe()
-            .map_err(|e| format!("Failed to get app path: {}", e))?;
+        let app_path =
+            std::env::current_exe().map_err(|e| format!("Failed to get app path: {e}"))?;
 
         let reg_path = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
         let app_name = "GameLauncher";
 
         if enabled {
             Command::new("reg")
-                .args(["add", reg_path, "/v", app_name, "/t", "REG_SZ", "/d", &app_path.display().to_string(), "/f"])
+                .args([
+                    "add",
+                    reg_path,
+                    "/v",
+                    app_name,
+                    "/t",
+                    "REG_SZ",
+                    "/d",
+                    &app_path.display().to_string(),
+                    "/f",
+                ])
                 .output()
-                .map_err(|e| format!("Failed to add registry key: {}", e))?;
+                .map_err(|e| format!("Failed to add registry key: {e}"))?;
         } else {
             let _ = Command::new("reg")
                 .args(["delete", reg_path, "/v", app_name, "/f"])
@@ -380,19 +406,19 @@ fn set_autolaunch(enabled: bool) -> Result<(), String> {
         let desktop_file = autostart_dir.join("tenfoot.desktop");
 
         if enabled {
-            let app_path = std::env::current_exe()
-                .map_err(|e| format!("Failed to get app path: {}", e))?;
+            let app_path =
+                std::env::current_exe().map_err(|e| format!("Failed to get app path: {e}"))?;
 
             fs::create_dir_all(&autostart_dir)
-                .map_err(|e| format!("Failed to create autostart dir: {}", e))?;
+                .map_err(|e| format!("Failed to create autostart dir: {e}"))?;
 
+            let app_display = app_path.display();
             let content = format!(
-                "[Desktop Entry]\nType=Application\nName=TenFoot\nExec={}\nX-GNOME-Autostart-enabled=true",
-                app_path.display()
+                "[Desktop Entry]\nType=Application\nName=TenFoot\nExec={app_display}\nX-GNOME-Autostart-enabled=true"
             );
 
             fs::write(&desktop_file, content)
-                .map_err(|e| format!("Failed to write desktop file: {}", e))?;
+                .map_err(|e| format!("Failed to write desktop file: {e}"))?;
         } else {
             let _ = fs::remove_file(&desktop_file);
         }

@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { GameCard } from '../components/GameCard';
+import { GameInfoPanel } from '../components/GameInfoPanel';
 import { PageHeader } from '../components/PageHeader';
+import { SearchPanel } from '../components/SearchPanel';
 import { SteamIcon } from '../components/icons/StoreIcons';
+import { useGridNavigation } from '../hooks/useGridNavigation';
 import {
   saveSteamCredentials,
   getSteamCredentials,
@@ -29,13 +32,38 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [focusedIndex, setFocusedIndex] = useState(0);
   const [hasApiCredentials, setHasApiCredentials] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
   const { games: installedGames, refresh: refreshInstalled } = useGamesByStore('steam');
   const apiKeyInputRef = useRef<HTMLInputElement>(null);
-  const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const searchButtonRef = useRef<HTMLButtonElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  const getColumnCount = useCallback(() => {
+    if (!gridRef.current) return 5;
+    const gridWidth = gridRef.current.offsetWidth;
+    const minColWidth = 140;
+    return Math.max(1, Math.floor(gridWidth / minColWidth));
+  }, []);
+
+  const handleNavigateUp = useCallback(() => {
+    searchButtonRef.current?.focus();
+  }, []);
+
+  const { focusIndex, handleKeyDown: gridHandleKeyDown, setItemRef } = useGridNavigation({
+    itemCount: games.length,
+    columns: getColumnCount,
+    wrapHorizontal: false,
+    wrapVertical: false,
+    onNavigateUp: handleNavigateUp,
+    onNavigateDown,
+    enableWASD: true,
+    enabled: step === 'results' && !isSearchOpen && !selectedGame,
+  });
 
   // Initialize: check for existing credentials or use local scan
   useEffect(() => {
@@ -136,102 +164,75 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
     }
   };
 
-  const handleGameClick = async (game: Game) => {
-    if (game.installed) {
+  const handleGameSelect = (game: Game) => {
+    setSelectedGame(game);
+  };
+
+  const handlePlayGame = async () => {
+    if (!selectedGame) return;
+    if (selectedGame.installed) {
       try {
-        await launchGame(`steam:${game.id}`);
+        await launchGame(`steam:${selectedGame.id}`);
       } catch (err) {
         console.error('Failed to launch game:', err);
       }
-    } else {
-      try {
-        await installSteamGame(game.id);
-      } catch (err) {
-        console.error('Failed to install game:', err);
-      }
     }
+  };
+
+  const handleInstallGame = async () => {
+    if (!selectedGame) return;
+    try {
+      await installSteamGame(selectedGame.id);
+    } catch (err) {
+      console.error('Failed to install game:', err);
+    }
+  };
+
+  const handleCloseInfo = () => {
+    setSelectedGame(null);
   };
 
   const handleConfirm = () => {
     onConnect?.();
   };
 
-  const focusCard = useCallback((index: number) => {
-    const clampedIndex = Math.max(0, Math.min(index, games.length - 1));
-    setFocusedIndex(clampedIndex);
-    cardRefs.current[clampedIndex]?.focus();
-  }, [games.length]);
-
   // Listen for focus event from global keyboard handler
   useEffect(() => {
     const handleFocusSteamConnect = () => {
       if (step === 'results' && games.length > 0) {
-        focusCard(focusedIndex);
+        focusIndex(0);
       } else if (step === 'api-setup') {
         apiKeyInputRef.current?.focus();
       }
     };
     window.addEventListener('focus-steam-connect', handleFocusSteamConnect);
     return () => window.removeEventListener('focus-steam-connect', handleFocusSteamConnect);
-  }, [step, games.length, focusedIndex, focusCard]);
+  }, [step, games.length, focusIndex]);
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (step !== 'results' || games.length === 0) return;
-
-    const cols = 4;
-    let nextIndex = focusedIndex;
-
-    switch (e.key) {
-      case 'ArrowRight':
-      case 'd':
-      case 'D':
-        nextIndex = (focusedIndex + 1) % games.length;
-        break;
-      case 'ArrowLeft':
-      case 'a':
-      case 'A':
-        nextIndex = focusedIndex - 1 < 0 ? games.length - 1 : focusedIndex - 1;
-        break;
-      case 'ArrowDown':
-      case 's':
-      case 'S':
-        if (focusedIndex + cols >= games.length) {
-          e.preventDefault();
-          onNavigateDown?.();
-          return;
-        }
-        nextIndex = Math.min(focusedIndex + cols, games.length - 1);
-        break;
-      case 'ArrowUp':
-      case 'w':
-      case 'W':
-        nextIndex = Math.max(focusedIndex - cols, 0);
-        break;
-      case 'Escape':
-        onBack?.();
-        return;
-      default:
-        return;
-    }
-
-    e.preventDefault();
-    focusCard(nextIndex);
-  }, [focusedIndex, games.length, step, focusCard, onNavigateDown, onBack]);
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
-
+  // Initial focus when games load
   useEffect(() => {
     if (step === 'results' && games.length > 0 && !loading) {
-      setTimeout(() => focusCard(0), 100);
+      setTimeout(() => focusIndex(0), 100);
     }
-  }, [step, games.length, focusCard, loading]);
+  }, [step, games.length, focusIndex, loading]);
 
-  const setCardRef = (index: number) => (el: HTMLButtonElement | null) => {
-    cardRefs.current[index] = el;
-  };
+  // Card keyboard handler - wraps grid navigation + select/close
+  const handleCardKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
+    // Handle search shortcut
+    if (e.key === '/' || (e.key === 'f' && !e.ctrlKey && !e.metaKey)) {
+      e.preventDefault();
+      setIsSearchOpen(true);
+      return;
+    }
+    // Handle escape to go back
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onBack?.();
+      return;
+    }
+    // Use grid navigation for arrow keys
+    gridHandleKeyDown(e, index);
+  }, [gridHandleKeyDown, onBack]);
 
   const installedCount = games.filter(g => g.installed).length;
 
@@ -340,7 +341,24 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
   }
 
   return (
-    <div className="flex flex-col items-stretch justify-start text-left h-full p-xl overflow-y-auto">
+    <div ref={containerRef} className="flex flex-col items-stretch justify-start text-left h-full overflow-y-auto">
+      {isSearchOpen && (
+        <SearchPanel
+          games={games}
+          onGameSelect={handleGameSelect}
+          onClose={() => setIsSearchOpen(false)}
+        />
+      )}
+
+      {selectedGame && (
+        <GameInfoPanel
+          game={selectedGame}
+          onPlay={handlePlayGame}
+          onInstall={handleInstallGame}
+          onClose={handleCloseInfo}
+        />
+      )}
+
       <PageHeader
         title="Steam"
         subtitle={
@@ -350,6 +368,24 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
         }
         actions={
           <>
+            <button
+              ref={searchButtonRef}
+              className="flex items-center gap-sm px-md py-sm bg-surface border-none rounded text-text-secondary cursor-pointer transition-colors duration-fast hover:bg-surface-hover hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+              onClick={() => setIsSearchOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                  e.preventDefault();
+                  focusIndex(0);
+                } else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+                  e.preventDefault();
+                  onNavigateDown?.();
+                }
+              }}
+            >
+              <SearchIcon />
+              <span>Search</span>
+              <kbd className="bg-tertiary px-1.5 py-0.5 rounded-sm font-sans text-xs text-text-muted">/</kbd>
+            </button>
             {!hasApiCredentials && (
               <button
                 className="bg-transparent text-accent px-md py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast hover:bg-surface hover:text-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
@@ -397,20 +433,31 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
           )}
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-0 p-sm">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <div ref={gridRef} className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-0 p-sm px-md pb-md">
             {games.map((game, index) => (
               <GameCard
                 key={game.id}
-                ref={setCardRef(index)}
+                ref={setItemRef(index)}
                 game={game}
-                onClick={() => handleGameClick(game)}
-                onFocus={() => setFocusedIndex(index)}
+                onClick={() => handleGameSelect(game)}
+                onFocus={() => focusIndex(index)}
+                onKeyDown={(e) => handleCardKeyDown(e, index)}
+                tabIndex={0}
               />
             ))}
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
   );
 }

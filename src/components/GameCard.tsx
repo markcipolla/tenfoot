@@ -47,8 +47,14 @@ export const GameCard = forwardRef<HTMLButtonElement, GameCardProps>(
       }
     };
 
-    const formatPlaytime = (minutes?: number) => {
-      if (!minutes || minutes === 0) return 'Unplayed';
+    const formatPlaytime = (minutes?: number, lastPlayed?: number) => {
+      if (!minutes || minutes === 0) {
+        // If no playtime but has been played recently, show that instead of "Unplayed"
+        if (lastPlayed && lastPlayed > 0) {
+          return 'Played';
+        }
+        return 'Unplayed';
+      }
       const hours = Math.floor(minutes / 60);
       if (hours < 1) return `${minutes}m`;
       return `${hours}h`;
@@ -112,7 +118,7 @@ export const GameCard = forwardRef<HTMLButtonElement, GameCardProps>(
             {game.name}
           </h3>
           <span className="text-[0.7rem] text-text-muted text-left leading-tight">
-            {formatPlaytime(game.playtime_minutes)}
+            {formatPlaytime(game.playtime_minutes, game.last_played)}
           </span>
         </div>
       </div>

@@ -16,12 +16,14 @@ struct OwnedGamesResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct OwnedGamesData {
     game_count: Option<u32>,
     games: Option<Vec<OwnedGame>>,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct OwnedGame {
     appid: u64,
     name: Option<String>,
@@ -37,6 +39,7 @@ struct AppDetailsWrapper {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct AppDetailsData {
     name: Option<String>,
     #[serde(rename = "type")]
@@ -93,7 +96,10 @@ impl SteamApi {
     }
 
     /// Fetch all owned games for a Steam user
-    pub fn get_owned_games(&self, credentials: &SteamCredentials) -> Result<Vec<Game>, LauncherError> {
+    pub fn get_owned_games(
+        &self,
+        credentials: &SteamCredentials,
+    ) -> Result<Vec<Game>, LauncherError> {
         let url = format!(
             "{}/IPlayerService/GetOwnedGames/v1/?key={}&steamid={}&include_appinfo=1&include_played_free_games=1&format=json",
             STEAM_API_BASE, credentials.api_key, credentials.steam_id
@@ -112,8 +118,9 @@ impl SteamApi {
             .games
             .unwrap_or_default()
             .into_iter()
-            .filter_map(|g| {
-                let name = g.name?;
+            .map(|g| {
+                // Use name from API, or fallback to app ID if not provided
+                let name = g.name.unwrap_or_else(|| format!("App {}", g.appid));
                 let mut game = Game::new(g.appid.to_string(), name, StoreType::Steam);
                 game.installed = false; // Will be updated when merging with installed games
 
@@ -128,19 +135,16 @@ impl SteamApi {
                 // Set artwork URLs from Steam CDN
                 let app_id = g.appid;
                 game.set_cover_url(format!(
-                    "https://steamcdn-a.akamaihd.net/steam/apps/{}/library_600x900.jpg",
-                    app_id
+                    "https://steamcdn-a.akamaihd.net/steam/apps/{app_id}/library_600x900.jpg"
                 ));
                 game.set_hero_url(format!(
-                    "https://steamcdn-a.akamaihd.net/steam/apps/{}/library_hero.jpg",
-                    app_id
+                    "https://steamcdn-a.akamaihd.net/steam/apps/{app_id}/library_hero.jpg"
                 ));
                 game.set_icon_url(format!(
-                    "https://steamcdn-a.akamaihd.net/steam/apps/{}/header.jpg",
-                    app_id
+                    "https://steamcdn-a.akamaihd.net/steam/apps/{app_id}/header.jpg"
                 ));
 
-                Some(game)
+                game
             })
             .collect();
 
@@ -148,7 +152,10 @@ impl SteamApi {
     }
 
     /// Validate Steam credentials by making a test API call
-    pub fn validate_credentials(&self, credentials: &SteamCredentials) -> Result<bool, LauncherError> {
+    pub fn validate_credentials(
+        &self,
+        credentials: &SteamCredentials,
+    ) -> Result<bool, LauncherError> {
         let url = format!(
             "{}/ISteamUser/GetPlayerSummaries/v2/?key={}&steamids={}",
             STEAM_API_BASE, credentials.api_key, credentials.steam_id
@@ -165,10 +172,7 @@ impl SteamApi {
 
     /// Fetch detailed game information from Steam Store API
     pub fn get_game_details(&self, app_id: &str) -> Result<Option<GameDetails>, LauncherError> {
-        let url = format!(
-            "https://store.steampowered.com/api/appdetails?appids={}",
-            app_id
-        );
+        let url = format!("https://store.steampowered.com/api/appdetails?appids={app_id}");
 
         let response = self
             .client
@@ -181,8 +185,8 @@ impl SteamApi {
             .map_err(|e| LauncherError::ParseError(e.to_string()))?;
 
         // Parse as generic JSON first since the response is keyed by app ID
-        let json: HashMap<String, AppDetailsWrapper> = serde_json::from_str(&text)
-            .map_err(|e| LauncherError::ParseError(e.to_string()))?;
+        let json: HashMap<String, AppDetailsWrapper> =
+            serde_json::from_str(&text).map_err(|e| LauncherError::ParseError(e.to_string()))?;
 
         let wrapper = match json.get(app_id) {
             Some(w) => w,
@@ -201,19 +205,28 @@ impl SteamApi {
         // Build platforms list
         let platforms = data.platforms.as_ref().map(|p| {
             let mut list = Vec::new();
-            if p.windows.unwrap_or(false) { list.push("Windows".to_string()); }
-            if p.mac.unwrap_or(false) { list.push("macOS".to_string()); }
-            if p.linux.unwrap_or(false) { list.push("Linux".to_string()); }
+            if p.windows.unwrap_or(false) {
+                list.push("Windows".to_string());
+            }
+            if p.mac.unwrap_or(false) {
+                list.push("macOS".to_string());
+            }
+            if p.linux.unwrap_or(false) {
+                list.push("Linux".to_string());
+            }
             list
         });
 
         // Build genres list
-        let genres = data.genres.as_ref().map(|g| {
-            g.iter().map(|genre| genre.description.clone()).collect()
-        });
+        let genres = data
+            .genres
+            .as_ref()
+            .map(|g| g.iter().map(|genre| genre.description.clone()).collect());
 
         Ok(Some(GameDetails {
-            description: data.short_description.clone()
+            description: data
+                .short_description
+                .clone()
                 .or_else(|| data.about_the_game.clone()),
             developers: data.developers.clone(),
             publishers: data.publishers.clone(),

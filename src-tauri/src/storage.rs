@@ -54,7 +54,7 @@ impl Storage {
             .join(APP_DIR);
 
         fs::create_dir_all(&data_dir)
-            .map_err(|e| LauncherError::ConfigError(format!("Failed to create data dir: {}", e)))?;
+            .map_err(|e| LauncherError::ConfigError(format!("Failed to create data dir: {e}")))?;
 
         Ok(Self { data_dir })
     }
@@ -82,19 +82,20 @@ impl Storage {
         }
 
         let content = fs::read_to_string(&path)
-            .map_err(|e| LauncherError::ConfigError(format!("Failed to read credentials: {}", e)))?;
+            .map_err(|e| LauncherError::ConfigError(format!("Failed to read credentials: {e}")))?;
 
         serde_json::from_str(&content)
-            .map_err(|e| LauncherError::ParseError(format!("Failed to parse credentials: {}", e)))
+            .map_err(|e| LauncherError::ParseError(format!("Failed to parse credentials: {e}")))
     }
 
     pub fn save_credentials(&self, credentials: &StoredCredentials) -> Result<(), LauncherError> {
         let path = self.credentials_path();
-        let content = serde_json::to_string_pretty(credentials)
-            .map_err(|e| LauncherError::ParseError(format!("Failed to serialize credentials: {}", e)))?;
+        let content = serde_json::to_string_pretty(credentials).map_err(|e| {
+            LauncherError::ParseError(format!("Failed to serialize credentials: {e}"))
+        })?;
 
         fs::write(&path, content)
-            .map_err(|e| LauncherError::ConfigError(format!("Failed to write credentials: {}", e)))
+            .map_err(|e| LauncherError::ConfigError(format!("Failed to write credentials: {e}")))
     }
 
     pub fn load_games_cache(&self) -> Result<GamesCache, LauncherError> {
@@ -104,19 +105,19 @@ impl Storage {
         }
 
         let content = fs::read_to_string(&path)
-            .map_err(|e| LauncherError::ConfigError(format!("Failed to read cache: {}", e)))?;
+            .map_err(|e| LauncherError::ConfigError(format!("Failed to read cache: {e}")))?;
 
         serde_json::from_str(&content)
-            .map_err(|e| LauncherError::ParseError(format!("Failed to parse cache: {}", e)))
+            .map_err(|e| LauncherError::ParseError(format!("Failed to parse cache: {e}")))
     }
 
     pub fn save_games_cache(&self, cache: &GamesCache) -> Result<(), LauncherError> {
         let path = self.cache_path();
         let content = serde_json::to_string_pretty(cache)
-            .map_err(|e| LauncherError::ParseError(format!("Failed to serialize cache: {}", e)))?;
+            .map_err(|e| LauncherError::ParseError(format!("Failed to serialize cache: {e}")))?;
 
         fs::write(&path, content)
-            .map_err(|e| LauncherError::ConfigError(format!("Failed to write cache: {}", e)))
+            .map_err(|e| LauncherError::ConfigError(format!("Failed to write cache: {e}")))
     }
 
     pub fn clear_steam_data(&self) -> Result<(), LauncherError> {
@@ -139,19 +140,20 @@ impl Storage {
         }
 
         let content = fs::read_to_string(&path)
-            .map_err(|e| LauncherError::ConfigError(format!("Failed to read play history: {}", e)))?;
+            .map_err(|e| LauncherError::ConfigError(format!("Failed to read play history: {e}")))?;
 
         serde_json::from_str(&content)
-            .map_err(|e| LauncherError::ParseError(format!("Failed to parse play history: {}", e)))
+            .map_err(|e| LauncherError::ParseError(format!("Failed to parse play history: {e}")))
     }
 
     pub fn save_play_history(&self, history: &PlayHistory) -> Result<(), LauncherError> {
         let path = self.play_history_path();
-        let content = serde_json::to_string_pretty(history)
-            .map_err(|e| LauncherError::ParseError(format!("Failed to serialize play history: {}", e)))?;
+        let content = serde_json::to_string_pretty(history).map_err(|e| {
+            LauncherError::ParseError(format!("Failed to serialize play history: {e}"))
+        })?;
 
         fs::write(&path, content)
-            .map_err(|e| LauncherError::ConfigError(format!("Failed to write play history: {}", e)))
+            .map_err(|e| LauncherError::ConfigError(format!("Failed to write play history: {e}")))
     }
 
     /// Record that a game was launched (updates last_played timestamp)
@@ -191,7 +193,10 @@ impl Storage {
     }
 
     /// Get play entry for a game
-    pub fn get_game_play_entry(&self, game_key: &str) -> Result<Option<GamePlayEntry>, LauncherError> {
+    pub fn get_game_play_entry(
+        &self,
+        game_key: &str,
+    ) -> Result<Option<GamePlayEntry>, LauncherError> {
         let history = self.load_play_history()?;
         Ok(history.games.get(game_key).cloned())
     }
@@ -203,19 +208,19 @@ impl Storage {
         }
 
         let content = fs::read_to_string(&path)
-            .map_err(|e| LauncherError::ConfigError(format!("Failed to read settings: {}", e)))?;
+            .map_err(|e| LauncherError::ConfigError(format!("Failed to read settings: {e}")))?;
 
         serde_json::from_str(&content)
-            .map_err(|e| LauncherError::ParseError(format!("Failed to parse settings: {}", e)))
+            .map_err(|e| LauncherError::ParseError(format!("Failed to parse settings: {e}")))
     }
 
     pub fn save_settings(&self, settings: &AppSettings) -> Result<(), LauncherError> {
         let path = self.settings_path();
         let content = serde_json::to_string_pretty(settings)
-            .map_err(|e| LauncherError::ParseError(format!("Failed to serialize settings: {}", e)))?;
+            .map_err(|e| LauncherError::ParseError(format!("Failed to serialize settings: {e}")))?;
 
         fs::write(&path, content)
-            .map_err(|e| LauncherError::ConfigError(format!("Failed to write settings: {}", e)))
+            .map_err(|e| LauncherError::ConfigError(format!("Failed to write settings: {e}")))
     }
 }
 
@@ -284,7 +289,11 @@ mod tests {
         let (_temp, storage) = create_test_storage();
 
         let mut cache = GamesCache::default();
-        cache.steam_owned.push(Game::new("123", "Test Game", crate::launcher_core::StoreType::Steam));
+        cache.steam_owned.push(Game::new(
+            "123",
+            "Test Game",
+            crate::launcher_core::StoreType::Steam,
+        ));
         cache.last_sync = Some(1234567890);
 
         storage.save_games_cache(&cache).unwrap();
@@ -309,7 +318,11 @@ mod tests {
         storage.save_credentials(&creds).unwrap();
 
         let mut cache = GamesCache::default();
-        cache.steam_owned.push(Game::new("1", "Game", crate::launcher_core::StoreType::Steam));
+        cache.steam_owned.push(Game::new(
+            "1",
+            "Game",
+            crate::launcher_core::StoreType::Steam,
+        ));
         storage.save_games_cache(&cache).unwrap();
 
         // Clear

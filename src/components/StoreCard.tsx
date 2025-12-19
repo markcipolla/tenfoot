@@ -8,6 +8,7 @@ export interface StoreCardProps {
   backgroundColor?: string;
   onClick?: () => void;
   onFocus?: () => void;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
   tabIndex?: number;
 }
 
@@ -21,6 +22,7 @@ export const StoreCard = forwardRef<HTMLButtonElement, StoreCardProps>(
       backgroundColor = '#252540',
       onClick,
       onFocus,
+      onKeyDown,
       tabIndex = 0,
     },
     ref
@@ -32,6 +34,8 @@ export const StoreCard = forwardRef<HTMLButtonElement, StoreCardProps>(
         e.preventDefault();
         setIsActive(true);
       }
+      // Pass other keys to parent handler
+      onKeyDown?.(e);
     };
 
     const handleKeyUp = (e: React.KeyboardEvent) => {

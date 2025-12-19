@@ -95,7 +95,7 @@ impl SteamStore {
         #[cfg(target_os = "windows")]
         {
             Command::new("cmd")
-                .args(["/C", "start", "", &format!("steam://install/{}", game_id)])
+                .args(["/C", "start", "", &format!("steam://install/{game_id}")])
                 .spawn()
                 .map_err(|e| LauncherError::LaunchError(e.to_string()))?;
         }
@@ -103,7 +103,7 @@ impl SteamStore {
         #[cfg(target_os = "macos")]
         {
             Command::new("open")
-                .arg(format!("steam://install/{}", game_id))
+                .arg(format!("steam://install/{game_id}"))
                 .spawn()
                 .map_err(|e| LauncherError::LaunchError(e.to_string()))?;
         }
@@ -111,7 +111,7 @@ impl SteamStore {
         #[cfg(target_os = "linux")]
         {
             Command::new("xdg-open")
-                .arg(format!("steam://install/{}", game_id))
+                .arg(format!("steam://install/{game_id}"))
                 .spawn()
                 .map_err(|e| LauncherError::LaunchError(e.to_string()))?;
         }
