@@ -421,14 +421,14 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
               </button>
             )}
             <button
-              className="px-lg py-md border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+              className="px-md py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
               onClick={handleRefresh}
               disabled={syncing}
             >
               {syncing ? 'Syncing...' : 'Refresh'}
             </button>
             <button
-              className="px-lg py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-accent text-white hover:bg-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+              className="px-md py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-accent text-white hover:bg-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
               onClick={handleConfirm}
             >
               Done

@@ -93,7 +93,9 @@ export function GOGConnectScreen({ onConnect, onBack, onNavigateDown }: GOGConne
               onKeyDown={(e) => {
                 if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
                   e.preventDefault();
-                  // Focus will be handled by GamesGrid
+                  // Focus the first game card in the grid
+                  const firstCard = document.querySelector('[data-game-id]') as HTMLButtonElement;
+                  firstCard?.focus();
                 }
               }}
             >
@@ -102,14 +104,14 @@ export function GOGConnectScreen({ onConnect, onBack, onNavigateDown }: GOGConne
               <kbd className="bg-tertiary px-1.5 py-0.5 rounded-sm font-sans text-xs text-text-muted">/</kbd>
             </button>
             <button
-              className="px-lg py-md border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+              className="px-md py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
               onClick={handleRefresh}
               disabled={syncing}
             >
               {syncing ? 'Scanning...' : 'Refresh'}
             </button>
             <button
-              className="px-lg py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-accent text-white hover:bg-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+              className="px-md py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-accent text-white hover:bg-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
               onClick={onConnect}
             >
               Done
