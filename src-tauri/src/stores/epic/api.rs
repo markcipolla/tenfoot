@@ -393,17 +393,58 @@ impl EpicApi {
                 let mut game = Game::new(item.id.clone(), item.title, StoreType::Epic);
                 game.installed = false;
 
-                // Set artwork URLs
+                // Set artwork URLs - Epic uses various image type names
+                // Prioritize in order: more specific types first
+                let mut has_cover = false;
+                let mut has_hero = false;
+                let mut has_icon = false;
+
                 for image in &item.key_images {
                     match image.image_type.as_str() {
-                        "DieselGameBox" | "DieselGameBoxTall" => {
-                            game.set_cover_url(image.url.clone());
+                        // Cover/box art (tall images)
+                        "DieselGameBoxTall"
+                        | "OfferImageTall"
+                        | "Thumbnail"
+                        | "DieselStoreFrontTall"
+                        | "CodeRedemption_340x440" => {
+                            if !has_cover {
+                                game.set_cover_url(image.url.clone());
+                                has_cover = true;
+                            }
                         }
-                        "DieselGameBoxLogo" => {
-                            game.set_icon_url(image.url.clone());
-                            game.set_hero_url(image.url.clone());
+                        // Wide/hero images
+                        "DieselGameBoxWide"
+                        | "OfferImageWide"
+                        | "DieselStoreFrontWide"
+                        | "Featured"
+                        | "featuredMedia" => {
+                            if !has_hero {
+                                game.set_hero_url(image.url.clone());
+                                has_hero = true;
+                            }
+                        }
+                        // Logo/icon
+                        "DieselGameBoxLogo" | "ProductLogo" => {
+                            if !has_icon {
+                                game.set_icon_url(image.url.clone());
+                                has_icon = true;
+                            }
+                        }
+                        // Fallback: DieselGameBox can be either
+                        "DieselGameBox" => {
+                            if !has_cover {
+                                game.set_cover_url(image.url.clone());
+                                has_cover = true;
+                            }
                         }
                         _ => {}
+                    }
+                }
+
+                // If we still don't have a cover, use hero as fallback
+                if !has_cover && has_hero {
+                    if let Some(hero) = &game.hero_url {
+                        game.set_cover_url(hero.clone());
                     }
                 }
 
