@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { GamesGrid, PageHeader } from '../components';
+import { GamesGrid, PageHeader, LoadingScreen, ErrorMessage } from '../components';
 import { GOGIcon } from '../components/icons/StoreIcons';
+import { SearchIcon } from '../components/icons/SearchIcon';
 import { useGamesByStore, launchGame } from '../hooks';
 import type { Game } from '../types';
 
@@ -61,18 +62,13 @@ export function GOGConnectScreen({ onBack, onNavigateDown }: GOGConnectScreenPro
 
   if (loading && games.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full p-xl text-center overflow-y-auto">
-        <div className="flex flex-col items-center gap-lg max-w-[400px]">
-          <div className="w-20 h-20 flex items-center justify-center bg-[#4a2a6a] rounded-xl text-[#ab47bc] animate-pulse [&_svg]:w-12 [&_svg]:h-12 [&_img]:w-12 [&_img]:h-12">
-            <GOGIcon />
-          </div>
-          <h1 className="text-[1.75rem] font-bold text-text-primary m-0">Scanning GOG Galaxy</h1>
-          <p className="text-base text-text-secondary m-0 leading-relaxed">
-            Looking for installed games...
-          </p>
-          <div className="w-8 h-8 border-3 border-surface border-t-[#ab47bc] rounded-full animate-spin" />
-        </div>
-      </div>
+      <LoadingScreen
+        icon={<GOGIcon />}
+        iconBgClass="bg-[#4a2a6a]"
+        iconTextClass="text-[#ab47bc]"
+        spinnerClass="border-t-[#ab47bc]"
+        title="Scanning GOG Galaxy"
+      />
     );
   }
 
@@ -127,11 +123,7 @@ export function GOGConnectScreen({ onBack, onNavigateDown }: GOGConnectScreenPro
         }
       />
 
-      {error && (
-        <div className="px-md py-sm mx-xl bg-[rgba(255,100,100,0.1)] border border-[rgba(255,100,100,0.3)] rounded text-[#ff6b6b] text-[0.85rem] mb-md">
-          {error}
-        </div>
-      )}
+      {error && <ErrorMessage message={error} className="mx-xl mb-md" />}
 
       <GamesGrid
         games={games}
@@ -151,11 +143,3 @@ export function GOGConnectScreen({ onBack, onNavigateDown }: GOGConnectScreenPro
   );
 }
 
-function SearchIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}

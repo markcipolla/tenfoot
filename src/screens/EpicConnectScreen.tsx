@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { GamesGrid, PageHeader } from '../components';
+import { GamesGrid, PageHeader, LoadingScreen, ErrorMessage } from '../components';
 import { EpicIcon } from '../components/icons/StoreIcons';
+import { SearchIcon } from '../components/icons/SearchIcon';
 import {
   useGamesByStore,
   launchGame,
@@ -229,11 +230,7 @@ export function EpicConnectScreen({ onBack, onNavigateDown }: EpicConnectScreenP
             </span>
           </div>
 
-          {error && (
-            <div className="px-md py-sm bg-[rgba(255,100,100,0.1)] border border-[rgba(255,100,100,0.3)] rounded text-[#ff6b6b] text-[0.85rem]">
-              {error}
-            </div>
-          )}
+          {error && <ErrorMessage message={error} />}
 
           <div className="flex flex-col gap-sm mt-lg w-full max-w-[300px] mx-auto">
             <button
@@ -257,18 +254,13 @@ export function EpicConnectScreen({ onBack, onNavigateDown }: EpicConnectScreenP
 
   if (loading || (syncing && games.length === 0)) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full p-xl text-center overflow-y-auto">
-        <div className="flex flex-col items-center gap-lg max-w-[400px]">
-          <div className="w-20 h-20 flex items-center justify-center bg-[#2a2a2a] rounded-xl text-white animate-pulse [&_svg]:w-12 [&_svg]:h-12 [&_img]:w-12 [&_img]:h-12">
-            <EpicIcon />
-          </div>
-          <h1 className="text-[1.75rem] font-bold text-text-primary m-0">Scanning Epic Games</h1>
-          <p className="text-base text-text-secondary m-0 leading-relaxed">
-            Looking for installed games...
-          </p>
-          <div className="w-8 h-8 border-3 border-surface border-t-white rounded-full animate-spin" />
-        </div>
-      </div>
+      <LoadingScreen
+        icon={<EpicIcon />}
+        iconBgClass="bg-[#2a2a2a]"
+        iconTextClass="text-white"
+        spinnerClass="border-t-white"
+        title="Scanning Epic Games"
+      />
     );
   }
 
@@ -350,11 +342,7 @@ export function EpicConnectScreen({ onBack, onNavigateDown }: EpicConnectScreenP
         }
       />
 
-      {error && (
-        <div className="px-md py-sm mx-xl bg-[rgba(255,100,100,0.1)] border border-[rgba(255,100,100,0.3)] rounded text-[#ff6b6b] text-[0.85rem] mb-md">
-          {error}
-        </div>
-      )}
+      {error && <ErrorMessage message={error} className="mx-xl mb-md" />}
 
       <GamesGrid
         games={games}
@@ -378,11 +366,3 @@ export function EpicConnectScreen({ onBack, onNavigateDown }: EpicConnectScreenP
   );
 }
 
-function SearchIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}

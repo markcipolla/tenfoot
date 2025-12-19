@@ -3,7 +3,9 @@ import { GameCard } from '../components/GameCard';
 import { GameInfoPanel } from '../components/GameInfoPanel';
 import { PageHeader } from '../components/PageHeader';
 import { SearchPanel } from '../components/SearchPanel';
+import { LoadingScreen, ErrorMessage } from '../components';
 import { SteamIcon } from '../components/icons/StoreIcons';
+import { SearchIcon } from '../components/icons/SearchIcon';
 import { useGridNavigation } from '../hooks/useGridNavigation';
 import {
   saveSteamCredentials,
@@ -318,11 +320,7 @@ export function SteamConnectScreen({ onBack, onNavigateDown }: SteamConnectScree
             </div>
           )}
 
-          {error && (
-            <div className="px-md py-sm bg-[rgba(255,100,100,0.1)] border border-[rgba(255,100,100,0.3)] rounded text-[#ff6b6b] text-[0.85rem] mb-md">
-              {error}
-            </div>
-          )}
+          {error && <ErrorMessage message={error} className="mb-md" />}
 
           <div className="flex flex-col gap-sm mt-xl w-full max-w-[300px] mx-auto">
             <button
@@ -346,18 +344,13 @@ export function SteamConnectScreen({ onBack, onNavigateDown }: SteamConnectScree
 
   if (loading || (syncing && games.length === 0)) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full p-xl text-center overflow-y-auto">
-        <div className="flex flex-col items-center gap-lg max-w-[400px]">
-          <div className="w-20 h-20 flex items-center justify-center bg-steam rounded-xl text-steam-accent animate-pulse [&_svg]:w-12 [&_svg]:h-12">
-            <SteamIcon />
-          </div>
-          <h1 className="text-[1.75rem] font-bold text-text-primary m-0">Scanning Steam</h1>
-          <p className="text-base text-text-secondary m-0 leading-relaxed">
-            Looking for installed games...
-          </p>
-          <div className="w-8 h-8 border-3 border-surface border-t-steam-accent rounded-full animate-spin" />
-        </div>
-      </div>
+      <LoadingScreen
+        icon={<SteamIcon />}
+        iconBgClass="bg-steam"
+        iconTextClass="text-steam-accent"
+        spinnerClass="border-t-steam-accent"
+        title="Scanning Steam"
+      />
     );
   }
 
@@ -454,11 +447,7 @@ export function SteamConnectScreen({ onBack, onNavigateDown }: SteamConnectScree
         }
       />
 
-      {error && (
-        <div className="px-md py-sm bg-[rgba(255,100,100,0.1)] border border-[rgba(255,100,100,0.3)] rounded text-[#ff6b6b] text-[0.85rem] mb-md">
-          {error}
-        </div>
-      )}
+      {error && <ErrorMessage message={error} className="mb-md" />}
 
       {games.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-2xl text-text-secondary text-center">
@@ -496,11 +485,3 @@ export function SteamConnectScreen({ onBack, onNavigateDown }: SteamConnectScree
   );
 }
 
-function SearchIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}
