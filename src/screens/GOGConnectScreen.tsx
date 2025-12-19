@@ -92,9 +92,12 @@ export function GOGConnectScreen({ onBack, onNavigateDown }: GOGConnectScreenPro
               onKeyDown={(e) => {
                 if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
                   e.preventDefault();
-                  // Focus the first game card in the grid
                   const firstCard = document.querySelector('[data-game-id]') as HTMLButtonElement;
                   firstCard?.focus();
+                } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                  e.preventDefault();
+                  const next = (e.currentTarget as HTMLElement).nextElementSibling as HTMLButtonElement;
+                  next?.focus();
                 }
               }}
             >
@@ -106,6 +109,17 @@ export function GOGConnectScreen({ onBack, onNavigateDown }: GOGConnectScreenPro
               className="px-md py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
               onClick={handleRefresh}
               disabled={syncing}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                  e.preventDefault();
+                  const firstCard = document.querySelector('[data-game-id]') as HTMLButtonElement;
+                  firstCard?.focus();
+                } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                  e.preventDefault();
+                  const prev = (e.currentTarget as HTMLElement).previousElementSibling as HTMLButtonElement;
+                  prev?.focus();
+                }
+              }}
             >
               {syncing ? 'Scanning...' : 'Refresh'}
             </button>

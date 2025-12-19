@@ -400,6 +400,10 @@ export function SteamConnectScreen({ onBack, onNavigateDown }: SteamConnectScree
                 } else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
                   e.preventDefault();
                   onNavigateDown?.();
+                } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                  e.preventDefault();
+                  const next = (e.currentTarget as HTMLElement).nextElementSibling as HTMLButtonElement;
+                  next?.focus();
                 }
               }}
             >
@@ -411,6 +415,20 @@ export function SteamConnectScreen({ onBack, onNavigateDown }: SteamConnectScree
               <button
                 className="bg-transparent text-accent px-md py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast hover:bg-surface hover:text-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
                 onClick={() => setStep('api-setup')}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                    e.preventDefault();
+                    focusIndex(0);
+                  } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                    e.preventDefault();
+                    const prev = (e.currentTarget as HTMLElement).previousElementSibling as HTMLButtonElement;
+                    prev?.focus();
+                  } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                    e.preventDefault();
+                    const next = (e.currentTarget as HTMLElement).nextElementSibling as HTMLButtonElement;
+                    next?.focus();
+                  }
+                }}
               >
                 Sync Full Library
               </button>
@@ -419,6 +437,16 @@ export function SteamConnectScreen({ onBack, onNavigateDown }: SteamConnectScree
               className="px-md py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
               onClick={handleRefresh}
               disabled={syncing}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                  e.preventDefault();
+                  focusIndex(0);
+                } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                  e.preventDefault();
+                  const prev = (e.currentTarget as HTMLElement).previousElementSibling as HTMLButtonElement;
+                  prev?.focus();
+                }
+              }}
             >
               {syncing ? 'Syncing...' : 'Refresh'}
             </button>
