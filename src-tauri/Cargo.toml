@@ -18,8 +18,14 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-# HTTP client for Steam API (future use)
+# HTTP client for Steam/Epic API
 reqwest = { version = "0.12", features = ["json", "blocking"] }
+
+# URL encoding for OAuth
+urlencoding = "2"
+
+# Base64 encoding for OAuth Basic auth
+base64 = "0.22"
 
 # SQLite for GOG Galaxy database
 rusqlite = { version = "0.32", features = ["bundled"] }

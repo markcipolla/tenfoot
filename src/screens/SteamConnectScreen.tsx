@@ -54,6 +54,9 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
     searchButtonRef.current?.focus();
   }, []);
 
+  // Find where installed games end and uninstalled begin (for section-aware navigation)
+  const sectionBreakIndex = games.findIndex(g => !g.installed);
+
   const { focusIndex, handleKeyDown: gridHandleKeyDown, setItemRef } = useGridNavigation({
     itemCount: games.length,
     columns: getColumnCount,
@@ -63,6 +66,7 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
     onNavigateDown,
     enableWASD: true,
     enabled: step === 'results' && !isSearchOpen && !selectedGame,
+    sectionBreakIndex: sectionBreakIndex > 0 ? sectionBreakIndex : undefined,
   });
 
   // Initialize: check for existing credentials or use local scan
@@ -85,6 +89,18 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
             setLoading(false);
             return;
           }
+          // If cache is empty but credentials exist, try syncing
+          try {
+            const synced = await syncSteamLibrary();
+            if (synced.length > 0) {
+              setGames(synced);
+              setStep('results');
+              setLoading(false);
+              return;
+            }
+          } catch {
+            // If sync fails, fall through to installed games
+          }
         }
 
         // Auto-detect Steam ID for later use
@@ -105,12 +121,12 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
     initialize();
   }, []);
 
-  // Update games when installed games change
+  // Update games when installed games change (also fallback when cache is empty)
   useEffect(() => {
-    if (!hasApiCredentials && installedGames.length > 0) {
+    if (installedGames.length > 0 && (!hasApiCredentials || games.length === 0)) {
       setGames(installedGames);
     }
-  }, [installedGames, hasApiCredentials]);
+  }, [installedGames, hasApiCredentials, games.length]);
 
   useEffect(() => {
     if (step === 'api-setup') {
@@ -172,7 +188,17 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
     if (!selectedGame) return;
     if (selectedGame.installed) {
       try {
-        await launchGame(`steam:${selectedGame.id}`);
+        const timestamp = await launchGame(`steam:${selectedGame.id}`);
+        // Update local games state with new last_played
+        setGames(prevGames =>
+          prevGames.map(game =>
+            game.id === selectedGame.id
+              ? { ...game, last_played: timestamp }
+              : game
+          )
+        );
+        // Update selected game as well
+        setSelectedGame(prev => prev ? { ...prev, last_played: timestamp } : null);
       } catch (err) {
         console.error('Failed to launch game:', err);
       }

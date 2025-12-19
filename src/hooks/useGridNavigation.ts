@@ -21,6 +21,9 @@ export interface GridNavigationOptions {
   enableWASD?: boolean;
   /** Whether navigation is currently enabled */
   enabled?: boolean;
+  /** Index where a section break occurs (e.g., between installed and uninstalled games).
+   *  When navigating up from this section's first row, go to last item of previous section. */
+  sectionBreakIndex?: number;
 }
 
 export interface GridNavigationResult {
@@ -50,6 +53,7 @@ export function useGridNavigation(options: GridNavigationOptions): GridNavigatio
     onNavigateRight,
     enableWASD = true,
     enabled = true,
+    sectionBreakIndex,
   } = options;
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -164,6 +168,17 @@ export function useGridNavigation(options: GridNavigationOptions): GridNavigatio
         if (e.key === 'w' || e.key === 'W') {
           if (!useWASD) return;
         }
+        // Check if we're at the first row of the second section (after section break)
+        if (sectionBreakIndex !== undefined && sectionBreakIndex > 0 && index >= sectionBreakIndex) {
+          const sectionFirstRow = Math.floor(sectionBreakIndex / cols);
+          const currentRow = Math.floor(index / cols);
+          if (currentRow === sectionFirstRow) {
+            // At first row of second section - go to last item of first section
+            nextIndex = sectionBreakIndex - 1;
+            handled = true;
+            break;
+          }
+        }
         if (isFirstRow) {
           if (wrapVertical) {
             // Wrap to bottom - same column or last item
@@ -190,7 +205,7 @@ export function useGridNavigation(options: GridNavigationOptions): GridNavigatio
       }
     }
   }, [enabled, getColumnCount, itemCount, wrapHorizontal, wrapVertical,
-      onNavigateUp, onNavigateDown, onNavigateLeft, onNavigateRight, enableWASD, focusIndex]);
+      onNavigateUp, onNavigateDown, onNavigateLeft, onNavigateRight, enableWASD, focusIndex, sectionBreakIndex]);
 
   const setItemRef = useCallback((index: number) => (el: HTMLButtonElement | null) => {
     itemRefs.current[index] = el;

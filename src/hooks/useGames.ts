@@ -6,6 +6,7 @@ interface UseGamesResult {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  updateGameLastPlayed: (gameKey: string, timestamp: number) => void;
 }
 
 interface SteamCredentials {
@@ -70,6 +71,48 @@ export async function isSteamInstalled(): Promise<boolean> {
   return invokeCommand<boolean>('is_steam_installed');
 }
 
+// Epic Games functions
+export interface EpicCredentials {
+  access_token: string;
+  refresh_token: string;
+  account_id: string;
+  display_name: string;
+  expires_at: number;
+}
+
+export async function getEpicLoginUrl(): Promise<string> {
+  return invokeCommand<string>('get_epic_login_url');
+}
+
+export async function exchangeEpicCode(authCode: string): Promise<string> {
+  return invokeCommand<string>('exchange_epic_code', { authCode });
+}
+
+export async function getEpicCredentials(): Promise<EpicCredentials | null> {
+  return invokeCommand<EpicCredentials | null>('get_epic_credentials');
+}
+
+export async function isEpicConnected(): Promise<boolean> {
+  if (!isTauri()) return false;
+  return invokeCommand<boolean>('is_epic_connected');
+}
+
+export async function syncEpicLibrary(): Promise<Game[]> {
+  return invokeCommand<Game[]>('sync_epic_library');
+}
+
+export async function getEpicGamesCached(): Promise<Game[]> {
+  return invokeCommand<Game[]>('get_epic_games_cached');
+}
+
+export async function getEpicLastSyncTime(): Promise<number | null> {
+  return invokeCommand<number | null>('get_epic_last_sync_time');
+}
+
+export async function disconnectEpic(): Promise<void> {
+  await invokeCommand('disconnect_epic');
+}
+
 export interface PlayHistory {
   [gameKey: string]: [number | null, number | null]; // [last_played, installed_at]
 }
@@ -95,19 +138,25 @@ export function useGames(): UseGamesResult {
       // Get locally installed games
       const installedGames = await invokeCommand<Game[]>('get_installed_games');
 
-      // Get Steam cached games (includes playtime from API)
+      // Get cached games from synced stores
       const steamCached = await getSteamGamesCached();
+      const epicCached = await getEpicGamesCached();
 
-      // Create a map of Steam games with their playtime data
+      // Create maps of synced games with their data
       const steamDataMap = new Map<string, Game>();
       for (const game of steamCached) {
         steamDataMap.set(`steam:${game.id}`, game);
       }
+      const epicDataMap = new Map<string, Game>();
+      for (const game of epicCached) {
+        epicDataMap.set(`epic:${game.id}`, game);
+      }
 
-      // Merge installed games with Steam data
+      // Merge installed games with synced data
       const mergedInstalled = installedGames.map(game => {
         const key = `${game.store}:${game.id}`;
         const steamData = steamDataMap.get(key);
+        const epicData = epicDataMap.get(key);
         if (steamData) {
           return {
             ...game,
@@ -115,14 +164,22 @@ export function useGames(): UseGamesResult {
             last_played: steamData.last_played ?? game.last_played,
           };
         }
+        if (epicData) {
+          return {
+            ...game,
+            cover_url: epicData.cover_url ?? game.cover_url,
+            icon_url: epicData.icon_url ?? game.icon_url,
+          };
+        }
         return game;
       });
 
-      // Add uninstalled Steam games
+      // Add uninstalled games from synced stores
       const installedKeys = new Set(installedGames.map(g => `${g.store}:${g.id}`));
       const uninstalledSteam = steamCached.filter(g => !installedKeys.has(`steam:${g.id}`));
+      const uninstalledEpic = epicCached.filter(g => !installedKeys.has(`epic:${g.id}`));
 
-      const allGames = [...mergedInstalled, ...uninstalledSteam];
+      const allGames = [...mergedInstalled, ...uninstalledSteam, ...uninstalledEpic];
 
       // Fetch play history and merge
       const history = await getPlayHistory();
@@ -144,21 +201,33 @@ export function useGames(): UseGamesResult {
     }
   }, []);
 
+  const updateGameLastPlayed = useCallback((gameKey: string, timestamp: number) => {
+    setGames(prevGames =>
+      prevGames.map(game => {
+        const key = `${game.store}:${game.id}`;
+        if (key === gameKey) {
+          return { ...game, last_played: timestamp };
+        }
+        return game;
+      })
+    );
+  }, []);
+
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  return { games, loading, error, refresh };
+  return { games, loading, error, refresh, updateGameLastPlayed };
 }
 
 export function useGamesByStore(storeId: StoreType): UseGamesResult {
-  const { games: allGames, loading, error, refresh } = useGames();
+  const { games: allGames, loading, error, refresh, updateGameLastPlayed } = useGames();
   const games = allGames.filter(game => game.store === storeId);
-  return { games, loading, error, refresh };
+  return { games, loading, error, refresh, updateGameLastPlayed };
 }
 
 export function useGamesSortedByLastPlayed(): UseGamesResult {
-  const { games: allGames, loading, error, refresh } = useGames();
+  const { games: allGames, loading, error, refresh, updateGameLastPlayed } = useGames();
 
   const sortedGames = [...allGames].sort((a, b) => {
     // First: installed games come before uninstalled
@@ -189,9 +258,9 @@ export function useGamesSortedByLastPlayed(): UseGamesResult {
     }
   });
 
-  return { games: sortedGames, loading, error, refresh };
+  return { games: sortedGames, loading, error, refresh, updateGameLastPlayed };
 }
 
-export async function launchGame(gameKey: string): Promise<void> {
-  await invokeCommand('launch_game', { gameKey });
+export async function launchGame(gameKey: string): Promise<number> {
+  return invokeCommand<number>('launch_game', { gameKey });
 }

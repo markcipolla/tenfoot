@@ -15,7 +15,7 @@ export function LibraryScreen({ onNavigateDown, storeFilter }: LibraryScreenProp
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  const { games: allGames, loading, error, refresh } = useGamesSortedByLastPlayed();
+  const { games: allGames, loading, error, refresh, updateGameLastPlayed } = useGamesSortedByLastPlayed();
 
   // Filter games by store if specified
   const games = storeFilter
@@ -39,7 +39,12 @@ export function LibraryScreen({ onNavigateDown, storeFilter }: LibraryScreenProp
     if (!selectedGame) return;
     if (selectedGame.installed) {
       try {
-        await launchGame(`${selectedGame.store}:${selectedGame.id}`);
+        const gameKey = `${selectedGame.store}:${selectedGame.id}`;
+        const timestamp = await launchGame(gameKey);
+        // Update the hook's state with new last_played (triggers re-sort)
+        updateGameLastPlayed(gameKey, timestamp);
+        // Update selected game as well
+        setSelectedGame(prev => prev ? { ...prev, last_played: timestamp } : null);
       } catch (err) {
         console.error('Failed to launch game:', err);
       }
@@ -313,7 +318,7 @@ export function LibraryScreen({ onNavigateDown, storeFilter }: LibraryScreenProp
           {uninstalledGames.length > 0 && (
             <div className="mt-lg py-md pl-md border-t border-surface">
               <h3 className="text-[0.85rem] font-semibold text-text-secondary m-0 mb-sm ml-xs pr-md uppercase tracking-wide">Not Installed</h3>
-              <div className="flex gap-0 overflow-x-auto overflow-y-visible py-sm scroll-pl-xs [scrollbar-width:thin] [scrollbar-color:var(--color-surface-hover)_transparent] before:content-[''] before:shrink-0 before:w-xs after:content-[''] after:shrink-0 after:w-md [&_.game-card-wrapper]:shrink-0 [&_.game-card-wrapper]:w-[120px]">
+              <div className="flex gap-0 overflow-x-auto overflow-y-visible py-sm scroll-pl-xs [scrollbar-width:thin] [scrollbar-color:var(--color-surface-hover)_transparent] before:content-[''] before:shrink-0 before:w-xs after:content-[''] after:shrink-0 after:w-md [&_.game-card-wrapper]:shrink-0 [&_.game-card-wrapper]:w-[140px]">
                 {uninstalledGames.map((game, index) => (
                   <GameCard
                     key={`${game.store}:${game.id}`}

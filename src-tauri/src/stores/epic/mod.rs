@@ -1,8 +1,10 @@
+pub mod api;
 mod manifest;
 mod paths;
 
 use crate::launcher_core::store::ArtworkType;
 use crate::launcher_core::{Game, GameStore, LauncherError};
+pub use api::{EpicApi, EpicCredentials, EpicGameDetails};
 use std::path::PathBuf;
 use std::process::Command;
 

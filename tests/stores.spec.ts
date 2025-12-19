@@ -232,6 +232,82 @@ test.describe('Steam Connect Screen', () => {
   });
 });
 
+test.describe('Epic Connect Screen', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(200);
+    // Navigate to Epic screen
+    const epicCard = page.locator('[data-store-id="epic"]');
+    await epicCard.click();
+    await expect(page.getByRole('heading', { name: 'Epic Games' })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('displays Epic screen with search button', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /Search/ })).toBeVisible();
+  });
+
+  test('can open search by clicking search button', async ({ page }) => {
+    const searchButton = page.getByRole('button', { name: /Search/ });
+    await searchButton.click();
+    await expect(page.getByPlaceholder('Search games...')).toBeVisible();
+  });
+
+  test('search panel closes with Escape', async ({ page }) => {
+    const searchButton = page.getByRole('button', { name: /Search/ });
+    await searchButton.click();
+    await expect(page.getByPlaceholder('Search games...')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByPlaceholder('Search games...')).not.toBeVisible();
+  });
+
+  test('Done button navigates to library with Epic filter', async ({ page }) => {
+    await page.getByRole('button', { name: 'Done' }).click();
+    await expect(page.getByRole('heading', { name: 'Epic Games' })).toBeVisible();
+  });
+
+  test('has Refresh button', async ({ page }) => {
+    await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
+  });
+});
+
+test.describe('GOG Connect Screen', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(200);
+    // Navigate to GOG screen
+    const gogCard = page.locator('[data-store-id="gog"]');
+    await gogCard.click();
+    await expect(page.getByRole('heading', { name: 'GOG Galaxy' })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('displays GOG screen with search button', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /Search/ })).toBeVisible();
+  });
+
+  test('can open search by clicking search button', async ({ page }) => {
+    const searchButton = page.getByRole('button', { name: /Search/ });
+    await searchButton.click();
+    await expect(page.getByPlaceholder('Search games...')).toBeVisible();
+  });
+
+  test('search panel closes with Escape', async ({ page }) => {
+    const searchButton = page.getByRole('button', { name: /Search/ });
+    await searchButton.click();
+    await expect(page.getByPlaceholder('Search games...')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByPlaceholder('Search games...')).not.toBeVisible();
+  });
+
+  test('Done button navigates to library with GOG filter', async ({ page }) => {
+    await page.getByRole('button', { name: 'Done' }).click();
+    await expect(page.getByRole('heading', { name: 'GOG Games' })).toBeVisible();
+  });
+
+  test('has Refresh button', async ({ page }) => {
+    await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
+  });
+});
+
 test.describe('Keyboard and Mouse Focus Sync', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');

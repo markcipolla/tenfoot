@@ -43,11 +43,6 @@ export function SearchPanel({ games, onGameSelect, onClose }: SearchPanelProps) 
     inputRef.current?.focus();
   }, []);
 
-  // Reset selection when query changes
-  useEffect(() => {
-    focusIndex(0);
-  }, [query, focusIndex]);
-
   // Scroll card into view when focused
   const scrollCardIntoView = useCallback((card: HTMLButtonElement | null) => {
     if (!card || !resultsRef.current) return;
@@ -147,7 +142,7 @@ export function SearchPanel({ games, onGameSelect, onClose }: SearchPanelProps) 
                 onClick={() => onGameSelect?.(result.item)}
                 onFocus={() => focusIndex(index)}
                 onKeyDown={(e) => handleCardKeyDown(e, index)}
-                tabIndex={0}
+                tabIndex={-1}
               />
             ))}
           </div>

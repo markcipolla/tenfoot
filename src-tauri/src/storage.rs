@@ -1,4 +1,5 @@
 use crate::launcher_core::{Game, LauncherError};
+use crate::stores::epic::EpicCredentials;
 use crate::stores::steam::api::SteamCredentials;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -14,13 +15,42 @@ const SETTINGS_FILE: &str = "settings.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct StoredCredentials {
+    #[serde(default)]
     pub steam: Option<SteamCredentials>,
+    #[serde(default)]
+    pub epic: Option<EpicCredentials>,
+}
+
+/// Cached metadata for Epic games (indexed by game ID)
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct EpicGameMetadata {
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub developers: Option<Vec<String>>,
+    #[serde(default)]
+    pub publishers: Option<Vec<String>>,
+    #[serde(default)]
+    pub genres: Option<Vec<String>>,
+    #[serde(default)]
+    pub platforms: Option<Vec<String>>,
+    #[serde(default)]
+    pub release_date: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GamesCache {
+    #[serde(default)]
     pub steam_owned: Vec<Game>,
+    #[serde(default)]
+    pub epic_owned: Vec<Game>,
+    #[serde(default)]
     pub last_sync: Option<u64>,
+    #[serde(default)]
+    pub epic_last_sync: Option<u64>,
+    /// Epic game metadata indexed by game ID
+    #[serde(default)]
+    pub epic_metadata: HashMap<String, EpicGameMetadata>,
 }
 
 /// Play history entry for a game
@@ -44,6 +74,9 @@ pub struct AppSettings {
 }
 
 pub struct Storage {
+    #[cfg(test)]
+    pub data_dir: PathBuf,
+    #[cfg(not(test))]
     data_dir: PathBuf,
 }
 
@@ -133,6 +166,19 @@ impl Storage {
         Ok(())
     }
 
+    pub fn clear_epic_data(&self) -> Result<(), LauncherError> {
+        let mut creds = self.load_credentials()?;
+        creds.epic = None;
+        self.save_credentials(&creds)?;
+
+        let mut cache = self.load_games_cache()?;
+        cache.epic_owned = Vec::new();
+        cache.epic_last_sync = None;
+        self.save_games_cache(&cache)?;
+
+        Ok(())
+    }
+
     pub fn load_play_history(&self) -> Result<PlayHistory, LauncherError> {
         let path = self.play_history_path();
         if !path.exists() {
@@ -158,6 +204,12 @@ impl Storage {
 
     /// Record that a game was launched (updates last_played timestamp)
     pub fn record_game_launch(&self, game_key: &str) -> Result<(), LauncherError> {
+        self.record_game_launch_with_timestamp(game_key)?;
+        Ok(())
+    }
+
+    /// Record that a game was launched and return the timestamp
+    pub fn record_game_launch_with_timestamp(&self, game_key: &str) -> Result<u64, LauncherError> {
         use std::time::{SystemTime, UNIX_EPOCH};
 
         let mut history = self.load_play_history()?;
@@ -169,7 +221,8 @@ impl Storage {
         let entry = history.games.entry(game_key.to_string()).or_default();
         entry.last_played = Some(now);
 
-        self.save_play_history(&history)
+        self.save_play_history(&history)?;
+        Ok(now)
     }
 
     /// Record when a game was first detected as installed
@@ -265,6 +318,7 @@ mod tests {
                 api_key: "test_key".to_string(),
                 steam_id: "12345".to_string(),
             }),
+            epic: None,
         };
 
         storage.save_credentials(&creds).unwrap();
@@ -314,6 +368,7 @@ mod tests {
                 api_key: "key".to_string(),
                 steam_id: "id".to_string(),
             }),
+            epic: None,
         };
         storage.save_credentials(&creds).unwrap();
 
@@ -334,5 +389,49 @@ mod tests {
 
         let loaded_cache = storage.load_games_cache().unwrap();
         assert!(loaded_cache.steam_owned.is_empty());
+    }
+
+    #[test]
+    fn test_record_game_launch_with_timestamp() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let (_temp, storage) = create_test_storage();
+
+        let before = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        let timestamp = storage
+            .record_game_launch_with_timestamp("steam:123")
+            .unwrap();
+
+        let after = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        // Timestamp should be between before and after
+        assert!(timestamp >= before);
+        assert!(timestamp <= after);
+
+        // Verify it was actually saved
+        let history = storage.load_play_history().unwrap();
+        let entry = history.games.get("steam:123").unwrap();
+        assert_eq!(entry.last_played, Some(timestamp));
+    }
+
+    #[test]
+    fn test_record_game_launch_returns_unit() {
+        let (_temp, storage) = create_test_storage();
+
+        // The original method should still work
+        let result = storage.record_game_launch("epic:456");
+        assert!(result.is_ok());
+
+        // Verify it was saved
+        let history = storage.load_play_history().unwrap();
+        let entry = history.games.get("epic:456").unwrap();
+        assert!(entry.last_played.is_some());
     }
 }

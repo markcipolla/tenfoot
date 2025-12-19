@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { BottomBar, SidePanel, Screen } from './components';
-import { StoresScreen, SteamConnectScreen, LibraryScreen, SettingsScreen } from './screens';
+import { StoresScreen, SteamConnectScreen, EpicConnectScreen, GOGConnectScreen, LibraryScreen, SettingsScreen } from './screens';
 import { useStoreConnections, hasSyncedLibrary } from './hooks';
 import './styles/global.css';
 
@@ -21,7 +21,7 @@ async function toggleFullscreen() {
   }
 }
 
-type AppScreen = Screen | 'steam-connect';
+type AppScreen = Screen | 'steam-connect' | 'epic-connect' | 'gog-connect';
 
 type StoreFilter = 'steam' | 'epic' | 'gog' | null;
 
@@ -71,18 +71,29 @@ function App() {
 
   const handleStoreSelect = (storeId: string) => {
     if (storeId === 'steam') {
-      // Always show Steam page - it handles both connected and not connected states
       setCurrentScreen('steam-connect');
-    } else if (storeId === 'epic' || storeId === 'gog') {
-      // TODO: Implement Epic and GOG connection screens
-      setStoreFilter(storeId as StoreFilter);
-      setCurrentScreen('library');
+    } else if (storeId === 'epic') {
+      setCurrentScreen('epic-connect');
+    } else if (storeId === 'gog') {
+      setCurrentScreen('gog-connect');
     }
   };
 
   const handleSteamConnect = () => {
     connectStore('steam');
     setStoreFilter('steam');
+    setCurrentScreen('library');
+  };
+
+  const handleEpicConnect = () => {
+    connectStore('epic');
+    setStoreFilter('epic');
+    setCurrentScreen('library');
+  };
+
+  const handleGOGConnect = () => {
+    connectStore('gog');
+    setStoreFilter('gog');
     setCurrentScreen('library');
   };
 
@@ -97,6 +108,10 @@ function App() {
       window.dispatchEvent(new CustomEvent('focus-settings'));
     } else if (currentScreen === 'steam-connect') {
       window.dispatchEvent(new CustomEvent('focus-steam-connect'));
+    } else if (currentScreen === 'epic-connect') {
+      window.dispatchEvent(new CustomEvent('focus-epic-connect'));
+    } else if (currentScreen === 'gog-connect') {
+      window.dispatchEvent(new CustomEvent('focus-gog-connect'));
     } else {
       window.dispatchEvent(new CustomEvent('focus-stores'));
     }
@@ -146,6 +161,22 @@ function App() {
             onNavigateDown={handleNavigateToBottomBar}
           />
         );
+      case 'epic-connect':
+        return (
+          <EpicConnectScreen
+            onConnect={handleEpicConnect}
+            onBack={() => setCurrentScreen('stores')}
+            onNavigateDown={handleNavigateToBottomBar}
+          />
+        );
+      case 'gog-connect':
+        return (
+          <GOGConnectScreen
+            onConnect={handleGOGConnect}
+            onBack={() => setCurrentScreen('stores')}
+            onNavigateDown={handleNavigateToBottomBar}
+          />
+        );
       case 'library':
         return (
           <LibraryScreen
@@ -169,7 +200,7 @@ function App() {
       <SidePanel
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
-        currentScreen={currentScreen === 'steam-connect' ? 'stores' : currentScreen}
+        currentScreen={currentScreen === 'steam-connect' || currentScreen === 'epic-connect' || currentScreen === 'gog-connect' ? 'stores' : currentScreen}
         onNavigate={handleNavigate}
       />
 

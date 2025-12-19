@@ -18,3 +18,6 @@ export type { PageHeaderProps } from './PageHeader';
 
 export { GameInfoPanel } from './GameInfoPanel';
 export type { GameInfoPanelProps } from './GameInfoPanel';
+
+export { GamesGrid } from './GamesGrid';
+export type { GamesGridProps } from './GamesGrid';

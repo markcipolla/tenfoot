@@ -23,11 +23,18 @@ const isTauri = () => {
 };
 
 async function fetchGameDetails(gameId: string, store: string): Promise<GameDetails | null> {
-  if (!isTauri() || store !== 'steam') return null;
+  if (!isTauri()) return null;
 
   try {
     const { invoke } = await import('@tauri-apps/api/core');
-    return await invoke<GameDetails | null>('get_game_details', { gameId });
+
+    if (store === 'steam') {
+      return await invoke<GameDetails | null>('get_game_details', { gameId });
+    } else if (store === 'epic') {
+      return await invoke<GameDetails | null>('get_epic_game_details', { gameId });
+    }
+
+    return null;
   } catch (err) {
     console.error('Failed to fetch game details:', err);
     return null;
