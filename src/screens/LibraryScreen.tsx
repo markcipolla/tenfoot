@@ -8,19 +8,13 @@ import type { Game } from '../types';
 
 export interface LibraryScreenProps {
   onNavigateDown?: () => void;
-  storeFilter?: 'steam' | 'epic' | 'gog' | null;
 }
 
-export function LibraryScreen({ onNavigateDown, storeFilter }: LibraryScreenProps) {
+export function LibraryScreen({ onNavigateDown }: LibraryScreenProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  const { games: allGames, loading, error, refresh, updateGameLastPlayed } = useGamesSortedByLastPlayed();
-
-  // Filter games by store if specified
-  const games = storeFilter
-    ? allGames.filter(g => g.store === storeFilter)
-    : allGames;
+  const { games, loading, error, refresh, updateGameLastPlayed } = useGamesSortedByLastPlayed();
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const libraryRef = useRef<HTMLDivElement>(null);
@@ -265,9 +259,7 @@ export function LibraryScreen({ onNavigateDown, storeFilter }: LibraryScreenProp
       )}
 
       <PageHeader
-        title={storeFilter
-          ? `${storeFilter.charAt(0).toUpperCase() + storeFilter.slice(1)} Games`
-          : "Library"}
+        title="Library"
         subtitle={uninstalledGames.length > 0
           ? `${installedGames.length} of ${games.length} games installed`
           : `${games.length} games`}

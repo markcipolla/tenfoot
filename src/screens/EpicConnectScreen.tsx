@@ -14,14 +14,13 @@ import {
 import type { Game } from '../types';
 
 export interface EpicConnectScreenProps {
-  onConnect?: () => void;
   onBack?: () => void;
   onNavigateDown?: () => void;
 }
 
 type ConnectionStep = 'scanning' | 'results' | 'oauth-setup';
 
-export function EpicConnectScreen({ onConnect, onBack, onNavigateDown }: EpicConnectScreenProps) {
+export function EpicConnectScreen({ onBack, onNavigateDown }: EpicConnectScreenProps) {
   const [step, setStep] = useState<ConnectionStep>('scanning');
   const [authCode, setAuthCode] = useState('');
   const [games, setGames] = useState<Game[]>([]);
@@ -317,12 +316,6 @@ export function EpicConnectScreen({ onConnect, onBack, onNavigateDown }: EpicCon
               disabled={syncing}
             >
               {syncing ? 'Syncing...' : 'Refresh'}
-            </button>
-            <button
-              className="px-md py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-accent text-white hover:bg-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
-              onClick={onConnect}
-            >
-              Done
             </button>
           </>
         }

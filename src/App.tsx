@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { BottomBar, SidePanel, Screen } from './components';
 import { StoresScreen, SteamConnectScreen, EpicConnectScreen, GOGConnectScreen, LibraryScreen, SettingsScreen } from './screens';
-import { useStoreConnections, hasSyncedLibrary } from './hooks';
+import { hasSyncedLibrary } from './hooks';
 import './styles/global.css';
 
 // Check if running in Tauri environment
@@ -23,14 +23,10 @@ async function toggleFullscreen() {
 
 type AppScreen = Screen | 'steam-connect' | 'epic-connect' | 'gog-connect';
 
-type StoreFilter = 'steam' | 'epic' | 'gog' | null;
-
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('stores');
-  const [storeFilter, setStoreFilter] = useState<StoreFilter>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const { connectStore } = useStoreConnections();
 
   // Load library first if synced data exists
   useEffect(() => {
@@ -65,7 +61,6 @@ function App() {
   };
 
   const handleNavigate = (screen: Screen) => {
-    setStoreFilter(null); // Clear filter when navigating via menu
     setCurrentScreen(screen);
   };
 
@@ -79,22 +74,8 @@ function App() {
     }
   };
 
-  const handleSteamConnect = () => {
-    connectStore('steam');
-    setStoreFilter('steam');
-    setCurrentScreen('library');
-  };
-
-  const handleEpicConnect = () => {
-    connectStore('epic');
-    setStoreFilter('epic');
-    setCurrentScreen('library');
-  };
-
-  const handleGOGConnect = () => {
-    connectStore('gog');
-    setStoreFilter('gog');
-    setCurrentScreen('library');
+  const handleStoreBack = () => {
+    setCurrentScreen('stores');
   };
 
   const handleNavigateToBottomBar = useCallback(() => {
@@ -156,24 +137,21 @@ function App() {
       case 'steam-connect':
         return (
           <SteamConnectScreen
-            onConnect={handleSteamConnect}
-            onBack={() => setCurrentScreen('stores')}
+            onBack={handleStoreBack}
             onNavigateDown={handleNavigateToBottomBar}
           />
         );
       case 'epic-connect':
         return (
           <EpicConnectScreen
-            onConnect={handleEpicConnect}
-            onBack={() => setCurrentScreen('stores')}
+            onBack={handleStoreBack}
             onNavigateDown={handleNavigateToBottomBar}
           />
         );
       case 'gog-connect':
         return (
           <GOGConnectScreen
-            onConnect={handleGOGConnect}
-            onBack={() => setCurrentScreen('stores')}
+            onBack={handleStoreBack}
             onNavigateDown={handleNavigateToBottomBar}
           />
         );
@@ -181,7 +159,6 @@ function App() {
         return (
           <LibraryScreen
             onNavigateDown={handleNavigateToBottomBar}
-            storeFilter={storeFilter}
           />
         );
       case 'settings':

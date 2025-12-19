@@ -5,12 +5,11 @@ import { useGamesByStore, launchGame } from '../hooks';
 import type { Game } from '../types';
 
 export interface GOGConnectScreenProps {
-  onConnect?: () => void;
   onBack?: () => void;
   onNavigateDown?: () => void;
 }
 
-export function GOGConnectScreen({ onConnect, onBack, onNavigateDown }: GOGConnectScreenProps) {
+export function GOGConnectScreen({ onBack, onNavigateDown }: GOGConnectScreenProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
@@ -109,12 +108,6 @@ export function GOGConnectScreen({ onConnect, onBack, onNavigateDown }: GOGConne
               disabled={syncing}
             >
               {syncing ? 'Scanning...' : 'Refresh'}
-            </button>
-            <button
-              className="px-md py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-accent text-white hover:bg-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
-              onClick={onConnect}
-            >
-              Done
             </button>
           </>
         }

@@ -220,13 +220,6 @@ test.describe('Steam Connect Screen', () => {
     await expect(page.getByPlaceholder('Search games...')).not.toBeVisible();
   });
 
-  test('Done button navigates to library with Steam filter', async ({ page }) => {
-    await page.getByRole('button', { name: 'Done' }).click();
-
-    // Should be on Library screen with Steam Games title
-    await expect(page.getByRole('heading', { name: 'Steam Games' })).toBeVisible();
-  });
-
   test('has Refresh button', async ({ page }) => {
     await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
   });
@@ -260,11 +253,6 @@ test.describe('Epic Connect Screen', () => {
     await expect(page.getByPlaceholder('Search games...')).not.toBeVisible();
   });
 
-  test('Done button navigates to library with Epic filter', async ({ page }) => {
-    await page.getByRole('button', { name: 'Done' }).click();
-    await expect(page.getByRole('heading', { name: 'Epic Games' })).toBeVisible();
-  });
-
   test('has Refresh button', async ({ page }) => {
     await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
   });
@@ -296,11 +284,6 @@ test.describe('GOG Connect Screen', () => {
     await expect(page.getByPlaceholder('Search games...')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByPlaceholder('Search games...')).not.toBeVisible();
-  });
-
-  test('Done button navigates to library with GOG filter', async ({ page }) => {
-    await page.getByRole('button', { name: 'Done' }).click();
-    await expect(page.getByRole('heading', { name: 'GOG Games' })).toBeVisible();
   });
 
   test('has Refresh button', async ({ page }) => {

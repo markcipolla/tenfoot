@@ -18,14 +18,13 @@ import {
 import type { Game } from '../types';
 
 export interface SteamConnectScreenProps {
-  onConnect?: () => void;
   onBack?: () => void;
   onNavigateDown?: () => void;
 }
 
 type ConnectionStep = 'scanning' | 'results' | 'api-setup';
 
-export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamConnectScreenProps) {
+export function SteamConnectScreen({ onBack, onNavigateDown }: SteamConnectScreenProps) {
   const [step, setStep] = useState<ConnectionStep>('scanning');
   const [apiKey, setApiKey] = useState('');
   const [steamId, setSteamId] = useState('');
@@ -216,10 +215,6 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
 
   const handleCloseInfo = () => {
     setSelectedGame(null);
-  };
-
-  const handleConfirm = () => {
-    onConnect?.();
   };
 
   // Listen for focus event from global keyboard handler
@@ -426,12 +421,6 @@ export function SteamConnectScreen({ onConnect, onBack, onNavigateDown }: SteamC
               disabled={syncing}
             >
               {syncing ? 'Syncing...' : 'Refresh'}
-            </button>
-            <button
-              className="px-md py-sm border-none rounded text-base font-semibold cursor-pointer transition-all duration-fast bg-accent text-white hover:bg-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
-              onClick={handleConfirm}
-            >
-              Done
             </button>
           </>
         }
